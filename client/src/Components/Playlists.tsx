@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router";
-
+import PlaylistCard from "./PlaylistCard";
 type Tokens = {
   accessToken: string;
   refreshToken: string;
@@ -21,9 +21,10 @@ const getTokens = (): Tokens => {
 
   return tokens;
 };
+
 export default function Playlists(): JSX.Element {
   const [accessToken, setAccessToken] = useState<string>("");
-  const [playlist, setPlaylist] = useState<any>([]);
+  const [playlists, setPlaylists] = useState<any>([]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const history = useHistory();
@@ -45,7 +46,7 @@ export default function Playlists(): JSX.Element {
         },
       })
       .then((res) => {
-        setPlaylist((prev: any) => [...prev, ...res.data.items]);
+        setPlaylists((prev: any) => [...prev, ...res.data.items]);
         let calls = Math.ceil(res.data.total / res.data.limit);
         let next_url = res.data.next;
         while (calls > 1) {
@@ -57,13 +58,13 @@ export default function Playlists(): JSX.Element {
             })
             .then((res) => {
               next_url = res.data.next;
-              setPlaylist((prev: any) => [...prev, ...res.data.items]);
+              setPlaylists((prev: any) => [...prev, ...res.data.items]);
             });
           calls--;
         }
         setTimeout(() => {
           setLoading(false);
-        }, 1000);
+        }, 10);
       });
   }, []);
 
@@ -75,36 +76,73 @@ export default function Playlists(): JSX.Element {
     history.push("/");
   };
 
-  if (!loading)
+  if (!loading) {
+    console.log(playlists);
     return (
-      <>
+      <div className="h-full overflow-scroll overflow-x-hidden">
         <div className="flex justify-center text-white mt-1">
           Hi {profile.display_name}!{" "}
           <button className="p-4 bg-green-400" onClick={logoutHandler}>
             Logout
           </button>
         </div>
-        <div className="flex justify-center mt-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 grid-rows-2 bg-blue-300 grid-flow-row w-7/12 gap-3">
-            <div className="bg-red-300 h-20">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300">item-1</div>
-            <div className="bg-red-300 h-20">item-1</div>
+        <div className="flex  justify-center mt-6 ">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
+            {playlists.map((playlist: any) => (
+              <PlaylistCard
+                key={playlist.id}
+                url={playlist.external_urls.spotify}
+                img={playlist.images[0].url}
+                name={playlist.name}
+                tracks={playlist.tracks.total}
+                token={accessToken}
+              />
+            ))}
           </div>
         </div>
-      </>
+      </div>
     );
-  else
+  } else
     return (
       <div className="text-4xl text-white flex justify-center items-center h-full">
         Loading...
       </div>
     );
 }
+
+const playlist = {
+  collaborative: false,
+  description: "",
+  external_urls: {
+    spotify: "https://open.spotify.com/playlist/32037vlVm5bjcLBU00gkx8",
+  },
+  href: "https://api.spotify.com/v1/playlists/32037vlVm5bjcLBU00gkx8",
+  id: "32037vlVm5bjcLBU00gkx8",
+  images: [
+    {
+      height: 640,
+      url: "https://i.scdn.co/image/ab67616d0000b27310e6745bb2f179dd3616b85f",
+      width: 640,
+    },
+  ],
+  name: "classics only",
+  owner: {
+    display_name: "Aryan Chopra",
+    external_urls: {
+      spotify: "https://open.spotify.com/user/31wncfgmnvnuerqrnnvx2v3fyp3m",
+    },
+    href: "https://api.spotify.com/v1/users/31wncfgmnvnuerqrnnvx2v3fyp3m",
+    id: "31wncfgmnvnuerqrnnvx2v3fyp3m",
+    type: "user",
+    uri: "spotify:user:31wncfgmnvnuerqrnnvx2v3fyp3m",
+  },
+  primary_color: null,
+  public: false,
+  snapshot_id: "MyxmMTFjNmM4M2RjMGEzMTk5MDMzNzNiOTlhZTg3MmI5MWY5YWNiODU4",
+  tracks: {
+    href: "https://api.spotify.com/v1/playlists/32037vlVm5bjcLBU00gkx8/tracks",
+    total: 1,
+  },
+  type: "playlist",
+  uri: "spotify:playlist:32037vlVm5bjcLBU00gkx8",
+};
