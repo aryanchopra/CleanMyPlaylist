@@ -87,14 +87,14 @@ export default function Playlists(): JSX.Element {
           </button>
         </div>
         <div className="flex  justify-center mt-6 ">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
+          <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
             {playlists.map((playlist: any) => (
               <PlaylistCard
                 key={playlist.id}
                 url={playlist.external_urls.spotify}
                 img={playlist.images[0].url}
                 name={playlist.name}
-                tracks={playlist.tracks.total}
+                tracks={playlist.tracks}
                 token={accessToken}
               />
             ))}

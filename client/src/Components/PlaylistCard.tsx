@@ -218,8 +218,16 @@ type PlaylistCardProps = {
   url: string;
   img: string;
   name: string;
-  tracks: number;
+  tracks: {
+    href: string;
+    total: number;
+  };
   token: string;
+};
+
+type explicitSong = {
+  id: number;
+  name: string;
 };
 
 const PlaylistCard: React.FC<PlaylistCardProps> = ({
@@ -229,16 +237,42 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
   tracks,
   token,
 }) => {
-  const convertPlaylist = async (): Promise<void> => {
-    const tracks = await axios.get(
-      'https://api.spotify.com/v1/search?q="J. Cole p r i d e . i s . t h e . d e v i l (with Lil Baby)"&type=track',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+  const convertPlaylist = async (tracks: string): Promise<void> => {
+    const songs = await axios.get(tracks, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log(songs);
+    const trackidsandnames: explicitSong[] = [];
+    songs.data.items.forEach((trackobj: any) => {
+      if (!trackobj.is_local) {
+        trackidsandnames.push({
+          id: trackobj.track.id,
+          name: `${trackobj.track.artists[0].name} ${trackobj.track.name}`,
+        });
       }
-    );
-    console.log(tracks);
+    });
+    console.log(trackidsandnames);
+    const cleanSongs: any = [];
+    // trackidsandnames.forEach(async (explicittrack: explicitSong) => {
+    //   const searchResults: any = await axios.get(
+    //     `https://api.spotify.com/v1/search?q=${explicittrack.name}&type=track`,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     }
+    //   );
+    //   console.log(searchResults.data);
+    // searchResults.data.tracks.items.some((trackobj: any) => {
+    //   if (!trackobj.explicit) {
+    //     console.log(trackobj);
+    //     return true;
+    //   }
+    // });
+    // }
+    // );
   };
   return (
     <div className="w-full h-72 rounded-md border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden">
@@ -251,11 +285,11 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
         </a>
       </p>
       <p className="self-start">
-        {tracks} {tracks > 1 ? "tracks" : "track"}
+        {tracks.total} {tracks.total > 1 ? "tracks" : "track"}
       </p>
       <button
         className="p-2 rounded-l-3xl rounded-r-3xl bg-green-600"
-        onClick={convertPlaylist}
+        onClick={() => convertPlaylist(tracks.href)}
       >
         {" "}
         Convert{" "}
