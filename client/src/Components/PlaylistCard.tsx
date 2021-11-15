@@ -225,9 +225,10 @@ type PlaylistCardProps = {
   token: string;
 };
 
-type explicitSong = {
+type playlistSong = {
   id: number;
   name: string;
+  explicit: boolean;
 };
 
 const PlaylistCard: React.FC<PlaylistCardProps> = ({
@@ -237,42 +238,67 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
   tracks,
   token,
 }) => {
-  const convertPlaylist = async (tracks: string): Promise<void> => {
-    const songs = await axios.get(tracks, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    console.log(songs);
-    const trackidsandnames: explicitSong[] = [];
-    songs.data.items.forEach((trackobj: any) => {
-      if (!trackobj.is_local) {
-        trackidsandnames.push({
-          id: trackobj.track.id,
-          name: `${trackobj.track.artists[0].name} ${trackobj.track.name}`,
-        });
+  const getTracks = async (tracksurl: string) => {
+    let totalsongs: Array<object> = [];
+    try {
+      const songs = await axios.get(tracksurl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      totalsongs = totalsongs.concat(songs.data.items);
+      let calls = Math.ceil(songs.data.total / songs.data.limit);
+      if (calls > 1) {
+        let next_url = songs.data.next;
+        while (calls > 1) {
+          let moresongs = await axios.get(next_url, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          totalsongs = totalsongs.concat(moresongs.data.items);
+          next_url = moresongs.data.next;
+          calls--;
+        }
       }
-    });
-    console.log(trackidsandnames);
+
+      return totalsongs;
+    } catch (err) {}
+  };
+
+
+  const convertPlaylist = async (tracks: string): Promise<void> => {
+    const songs = await getTracks(tracks);
+    const trackidsandnames: playlistSong[] = [];
+    if (songs) {
+      songs.forEach((trackobj: any) => {
+        if (!trackobj.is_local) {
+          trackidsandnames.push({
+            id: trackobj.track.id,
+            name: `${trackobj.track.artists[0].name} ${trackobj.track.name}`,
+            explicit: trackobj.track.explicit,
+          });
+        }
+      });
+    }
     const cleanSongs: any = [];
-    // trackidsandnames.forEach(async (explicittrack: explicitSong) => {
-    //   const searchResults: any = await axios.get(
-    //     `https://api.spotify.com/v1/search?q=${explicittrack.name}&type=track`,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     }
-    //   );
-    //   console.log(searchResults.data);
-    // searchResults.data.tracks.items.some((trackobj: any) => {
-    //   if (!trackobj.explicit) {
-    //     console.log(trackobj);
-    //     return true;
-    //   }
-    // });
-    // }
-    // );
+    trackidsandnames.forEach(async (track: playlistSong) => {
+      if (!track.explicit) return;
+      const searchResults: any = await axios.get(
+        `https://api.spotify.com/v1/search?q=${track.name}&type=track`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      searchResults.data.tracks.items.some((trackobj: any) => {
+        if (!trackobj.explicit) {
+          console.log(trackobj.name);
+          return true;
+        }
+      });
+    });
   };
   return (
     <div className="w-full h-72 rounded-md border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden">
