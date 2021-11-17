@@ -326,7 +326,10 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
           );
           const searchResults: SpotifyApi.TrackSearchResponse = response.data;
           searchResults.tracks.items.some((trackobj) => {
-            if (!trackobj.explicit) {
+            if (
+              !trackobj.explicit &&
+              trackobj.artists.some((artist) => artist.name === track.artist)
+            ) {
               cleanSongs.push({
                 id: trackobj.id,
                 name: trackobj.name,
