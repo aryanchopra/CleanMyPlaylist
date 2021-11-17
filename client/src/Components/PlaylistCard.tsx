@@ -1,6 +1,24 @@
-import axios from "axios";
-import React from "react";
+import axios, { Axios, AxiosResponse } from "axios";
+import React, { useState } from "react";
 
+const delay = (sec: number) =>
+  new Promise((res: any) => setTimeout(res, sec * 1000));
+
+axios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    if (error.response.status === 429) {
+      console.log("error occ");
+      const retry_after = Number(error.response.headers["retry-after"]);
+      await delay(retry_after);
+      return axios.request(error.config);
+    }
+    console.log("here");
+    return Promise.reject(error);
+  }
+);
 const sampleplaylist = {
   collaborative: false,
   description: "",
@@ -214,7 +232,7 @@ const sampleTrack = {
   uri: "spotify:track:5W8jRrZ6tWrTrqnKRtIQBf",
 };
 
-type PlaylistCardProps = {
+export interface PlaylistCardProps {
   url: string;
   img: string;
   name: string;
@@ -223,13 +241,17 @@ type PlaylistCardProps = {
     total: number;
   };
   token: string;
-};
+}
 
-type playlistSong = {
-  id: number;
+export interface cleanSong {
+  id: string;
   name: string;
+  artist?: string;
+}
+
+export interface playlistSong extends cleanSong {
   explicit: boolean;
-};
+}
 
 const PlaylistCard: React.FC<PlaylistCardProps> = ({
   url,
@@ -238,27 +260,32 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
   tracks,
   token,
 }) => {
+  const [converting, setConverting] = useState<boolean>(true);
   const getTracks = async (tracksurl: string) => {
-    let totalsongs: Array<object> = [];
+    let totalsongs: SpotifyApi.PlaylistTrackObject[] = [];
     try {
-      const songs = await axios.get(tracksurl, {
+      const response: AxiosResponse = await axios.get(tracksurl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      totalsongs = totalsongs.concat(songs.data.items);
-      let calls = Math.ceil(songs.data.total / songs.data.limit);
+      const songs: SpotifyApi.PlaylistTrackResponse = response.data;
+      totalsongs = totalsongs.concat(songs.items);
+      let calls = Math.ceil(songs.total / songs.limit);
       if (calls > 1) {
-        let next_url = songs.data.next;
+        let next_url = songs.next;
         while (calls > 1) {
-          let moresongs = await axios.get(next_url, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          totalsongs = totalsongs.concat(moresongs.data.items);
-          next_url = moresongs.data.next;
-          calls--;
+          if (next_url) {
+            let response: AxiosResponse = await axios.get(next_url, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            let moresongs: SpotifyApi.PlaylistTrackResponse = response.data;
+            totalsongs = totalsongs.concat(moresongs.items);
+            next_url = moresongs.next;
+            calls--;
+          }
         }
       }
 
@@ -266,39 +293,60 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
     } catch (err) {}
   };
 
-
   const convertPlaylist = async (tracks: string): Promise<void> => {
+    setConverting(true);
     const songs = await getTracks(tracks);
     const trackidsandnames: playlistSong[] = [];
     if (songs) {
-      songs.forEach((trackobj: any) => {
+      songs.forEach((trackobj) => {
         if (!trackobj.is_local) {
           trackidsandnames.push({
             id: trackobj.track.id,
-            name: `${trackobj.track.artists[0].name} ${trackobj.track.name}`,
+            artist: trackobj.track.artists[0].name,
+            name: trackobj.track.name,
             explicit: trackobj.track.explicit,
           });
         }
       });
     }
-    const cleanSongs: any = [];
-    trackidsandnames.forEach(async (track: playlistSong) => {
-      if (!track.explicit) return;
-      const searchResults: any = await axios.get(
-        `https://api.spotify.com/v1/search?q=${track.name}&type=track`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    const cleanSongs: cleanSong[] = [];
+
+    console.log(trackidsandnames);
+    for (const track of trackidsandnames) {
+      // trackidsandnames.forEach(async (track) => {
+      if (track.explicit) {
+        try {
+          const response: AxiosResponse = await axios.get(
+            `https://api.spotify.com/v1/search?q=${track.artist} ${track.name}&type=track`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const searchResults: SpotifyApi.TrackSearchResponse = response.data;
+          searchResults.tracks.items.some((trackobj) => {
+            if (!trackobj.explicit) {
+              cleanSongs.push({
+                id: trackobj.id,
+                name: trackobj.name,
+                artist: trackobj.artists[0].name,
+              });
+              return true;
+            }
+          });
+        } catch (err) {
+          console.log("Error occured while searching");
         }
-      );
-      searchResults.data.tracks.items.some((trackobj: any) => {
-        if (!trackobj.explicit) {
-          console.log(trackobj.name);
-          return true;
-        }
-      });
-    });
+      } else {
+        cleanSongs.push({
+          id: track.id,
+          name: track.name,
+          artist: track.artist,
+        });
+      }
+    }
+    console.log(cleanSongs);
   };
   return (
     <div className="w-full h-72 rounded-md border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden">
