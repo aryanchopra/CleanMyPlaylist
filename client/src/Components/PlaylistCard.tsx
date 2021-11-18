@@ -14,8 +14,9 @@ axios.interceptors.response.use(
       const retry_after = Number(error.response.headers["retry-after"]);
       await delay(retry_after);
       return axios.request(error.config);
+    } else if (error.response.status === 401) {
+      console.log("Token expired");
     }
-    console.log("here");
     return Promise.reject(error);
   }
 );
@@ -234,6 +235,7 @@ const sampleTrack = {
 
 export interface PlaylistCardProps {
   url: string;
+  userid: string;
   img: string;
   name: string;
   tracks: {
@@ -256,11 +258,13 @@ export interface playlistSong extends cleanSong {
 const PlaylistCard: React.FC<PlaylistCardProps> = ({
   url,
   img,
+  userid,
   name,
   tracks,
   token,
 }) => {
   const [converting, setConverting] = useState<boolean>(true);
+
   const getTracks = async (tracksurl: string) => {
     let totalsongs: SpotifyApi.PlaylistTrackObject[] = [];
     try {
@@ -293,12 +297,22 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
     } catch (err) {}
   };
 
-  const convertPlaylist = async (tracks: string): Promise<void> => {
+  const convertPlaylist = async (
+    playlisttracksurl: string,
+    playlistname: string,
+    userid: string
+  ): Promise<void> => {
     setConverting(true);
-    const songs = await getTracks(tracks);
+
+    //Get all tracks of the playlist
+    const songs = await getTracks(playlisttracksurl);
+
+    //Array with Track IDs and Names
     const trackidsandnames: playlistSong[] = [];
+
     if (songs) {
       songs.forEach((trackobj) => {
+        //Push non local tracks to trackidsandnames
         if (!trackobj.is_local) {
           trackidsandnames.push({
             id: trackobj.track.id,
@@ -309,13 +323,15 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
         }
       });
     }
+
+    //Array of clean versions of songs
     const cleanSongs: cleanSong[] = [];
 
-    console.log(trackidsandnames);
     for (const track of trackidsandnames) {
       // trackidsandnames.forEach(async (track) => {
       if (track.explicit) {
         try {
+          //Search for track in trackidsandnames
           const response: AxiosResponse = await axios.get(
             `https://api.spotify.com/v1/search?q=${track.artist} ${track.name}&type=track`,
             {
@@ -325,6 +341,8 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
             }
           );
           const searchResults: SpotifyApi.TrackSearchResponse = response.data;
+
+          //Push the first clean version from the results
           searchResults.tracks.items.some((trackobj) => {
             if (
               !trackobj.explicit &&
@@ -342,6 +360,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
           console.log("Error occured while searching");
         }
       } else {
+        //If track is clean, push as it is
         cleanSongs.push({
           id: track.id,
           name: track.name,
@@ -349,7 +368,22 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
         });
       }
     }
-    console.log(cleanSongs);
+
+    //Create new playlist
+    const response: AxiosResponse = await axios.post(
+      `https://api.spotify.com/v1/users/${userid}/playlists`,
+      {
+        name: `${playlistname} - Clean`,
+        public: true,
+        description: "Cleaned using CleanMyPlaylist",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const newplaylist: SpotifyApi.CreatePlaylistResponse = response.data;
   };
   return (
     <div className="w-full h-72 rounded-md border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden">
@@ -366,7 +400,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
       </p>
       <button
         className="p-2 rounded-l-3xl rounded-r-3xl bg-green-600"
-        onClick={() => convertPlaylist(tracks.href)}
+        onClick={() => convertPlaylist(tracks.href, name, userid)}
       >
         {" "}
         Convert{" "}

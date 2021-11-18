@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router";
 import PlaylistCard from "./PlaylistCard";
@@ -24,14 +24,16 @@ const getTokens = (): Tokens => {
 
 export default function Playlists(): JSX.Element {
   const [accessToken, setAccessToken] = useState<string>("");
-  const [playlists, setPlaylists] = useState<any>([]);
-  const [profile, setProfile] = useState<any>(null);
+  const [playlists, setPlaylists] = useState<
+    SpotifyApi.PlaylistObjectSimplified[]
+  >([]);
+  const [profile, setProfile] = useState<null | SpotifyApi.UserProfileResponse>(
+    null
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const history = useHistory();
-  useEffect(() => {
-    const tokens = getTokens();
-    tokens ? setAccessToken(tokens.accessToken) : history.push("/");
-    if (!tokens) return;
+
+  const getProfile = async (tokens: Tokens) => {
     axios
       .get("https://api.spotify.com/v1/me/", {
         headers: {
@@ -39,14 +41,27 @@ export default function Playlists(): JSX.Element {
         },
       })
       .then((res) => setProfile(res.data));
-    axios
-      .get("https://api.spotify.com/v1/me/playlists", {
-        headers: {
-          Authorization: `Bearer ${tokens.accessToken}`,
-        },
-      })
-      .then((res) => {
-        setPlaylists((prev: any) => [...prev, ...res.data.items]);
+  };
+
+  const getPlaylists = async (tokens: Tokens) => {
+    try {
+      const res: AxiosResponse = await axios.get(
+        "https://api.spotify.com/v1/me/playlists",
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`,
+          },
+        }
+      );
+      if (res) {
+        const playlistdata: SpotifyApi.ListOfCurrentUsersPlaylistsResponse =
+          res.data;
+
+        setPlaylists((prev: SpotifyApi.PlaylistObjectSimplified[]) => [
+          ...prev,
+          ...playlistdata.items,
+        ]);
+
         let calls = Math.ceil(res.data.total / res.data.limit);
         let next_url = res.data.next;
         while (calls > 1) {
@@ -65,7 +80,16 @@ export default function Playlists(): JSX.Element {
         setTimeout(() => {
           setLoading(false);
         }, 10);
-      });
+      }
+    } catch (err) {}
+  };
+  useEffect(() => {
+    const tokens = getTokens();
+    tokens ? setAccessToken(tokens.accessToken) : history.push("/");
+    if (!tokens) return;
+
+    getProfile(tokens);
+    getPlaylists(tokens);
   }, []);
 
   var delete_cookie = function (name: string) {
@@ -76,8 +100,7 @@ export default function Playlists(): JSX.Element {
     history.push("/");
   };
 
-  if (!loading) {
-    console.log(playlists);
+  if (!loading && profile) {
     return (
       <div className="h-full overflow-scroll overflow-x-hidden">
         <div className="flex justify-center text-white mt-1">
@@ -88,11 +111,12 @@ export default function Playlists(): JSX.Element {
         </div>
         <div className="flex  justify-center mt-6 ">
           <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
-            {playlists.map((playlist: any) => (
+            {playlists.map((playlist) => (
               <PlaylistCard
                 key={playlist.id}
+                userid={profile.id}
                 url={playlist.external_urls.spotify}
-                img={playlist.images[0].url}
+                img={playlist.images[0]?.url}
                 name={playlist.name}
                 tracks={playlist.tracks}
                 token={accessToken}
