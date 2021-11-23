@@ -2,6 +2,12 @@ import axios, { AxiosResponse } from "axios";
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router";
 import PlaylistCard from "./PlaylistCard";
+import SpotifyService from "../services/Spotify";
+import Modal from "react-modal";
+import ProgressBar from "./ProgressBar";
+
+Modal.setAppElement("#root");
+
 type Tokens = {
   accessToken: string;
   refreshToken: string;
@@ -25,71 +31,35 @@ const getTokens = (): Tokens => {
 export default function Playlists(): JSX.Element {
   const [accessToken, setAccessToken] = useState<string>("");
   const [playlists, setPlaylists] = useState<
-    SpotifyApi.PlaylistObjectSimplified[]
+    SpotifyApi.PlaylistObjectSimplified[] | null
   >([]);
   const [profile, setProfile] = useState<null | SpotifyApi.UserProfileResponse>(
     null
   );
   const [loading, setLoading] = useState<boolean>(true);
+
+  const [converting, setConverting] = useState<boolean>(false);
+  const [progressBarWidth, setProgressBarWidth] = useState<number>(0);
+  const [progressBarText, setProgressBarText] = useState<string>("");
   const history = useHistory();
 
-  const getProfile = async (tokens: Tokens) => {
-    axios
-      .get("https://api.spotify.com/v1/me/", {
-        headers: {
-          Authorization: `Bearer ${tokens.accessToken}`,
-        },
-      })
-      .then((res) => setProfile(res.data));
-  };
-
-  const getPlaylists = async (tokens: Tokens) => {
-    try {
-      const res: AxiosResponse = await axios.get(
-        "https://api.spotify.com/v1/me/playlists",
-        {
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`,
-          },
-        }
-      );
-      if (res) {
-        const playlistdata: SpotifyApi.ListOfCurrentUsersPlaylistsResponse =
-          res.data;
-
-        setPlaylists((prev: SpotifyApi.PlaylistObjectSimplified[]) => [
-          ...prev,
-          ...playlistdata.items,
-        ]);
-
-        let calls = Math.ceil(res.data.total / res.data.limit);
-        let next_url = res.data.next;
-        while (calls > 1) {
-          axios
-            .get(next_url, {
-              headers: {
-                Authorization: `Bearer ${tokens.accessToken}`,
-              },
-            })
-            .then((res) => {
-              next_url = res.data.next;
-              setPlaylists((prev: any) => [...prev, ...res.data.items]);
-            });
-          calls--;
-        }
-        setTimeout(() => {
-          setLoading(false);
-        }, 10);
-      }
-    } catch (err) {}
-  };
   useEffect(() => {
+    const getProfile = async () => {
+      const profile = await SpotifyService.getProfile();
+      setProfile(profile);
+    };
+    const getPlaylists = async () => {
+      const playlists = await SpotifyService.getPlaylists();
+      console.log(playlists);
+      setPlaylists(playlists);
+    };
     const tokens = getTokens();
     tokens ? setAccessToken(tokens.accessToken) : history.push("/");
     if (!tokens) return;
-
-    getProfile(tokens);
-    getPlaylists(tokens);
+    SpotifyService.setTokens(tokens);
+    getProfile();
+    getPlaylists();
+    setLoading(false);
   }, []);
 
   var delete_cookie = function (name: string) {
@@ -100,31 +70,51 @@ export default function Playlists(): JSX.Element {
     history.push("/");
   };
 
-  if (!loading && profile) {
+  if (!loading && profile && playlists) {
     return (
-      <div className="h-full overflow-scroll overflow-x-hidden">
-        <div className="flex justify-center text-white mt-1">
-          Hi {profile.display_name}!{" "}
-          <button className="p-4 bg-green-400" onClick={logoutHandler}>
-            Logout
-          </button>
-        </div>
-        <div className="flex  justify-center mt-6 ">
-          <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
-            {playlists.map((playlist) => (
-              <PlaylistCard
-                key={playlist.id}
-                userid={profile.id}
-                url={playlist.external_urls.spotify}
-                img={playlist.images[0]?.url}
-                name={playlist.name}
-                tracks={playlist.tracks}
-                token={accessToken}
-              />
-            ))}
+      <>
+        <div className="h-full overflow-scroll overflow-x-hidden">
+          <div className="flex justify-center text-white mt-1">
+            Hi {profile.display_name}!{" "}
+            <button className="p-4 bg-green-400" onClick={logoutHandler}>
+              Logout
+            </button>
+          </div>
+          <div className="flex  justify-center mt-6 ">
+            <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
+              {playlists.map((playlist) => (
+                <PlaylistCard
+                  playlists={playlists}
+                  setPlaylists={setPlaylists}
+                  key={playlist.id}
+                  userid={profile.id}
+                  url={playlist.external_urls.spotify}
+                  img={playlist.images[0]?.url}
+                  name={playlist.name}
+                  tracks={playlist.tracks}
+                  token={accessToken}
+                  converting={converting}
+                  setConverting={setConverting}
+                  setProgressBarText={setProgressBarText}
+                  setProgressBarWidth={setProgressBarWidth}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+        <Modal
+          className="top-1/3 right-1/3 left-1/3 bottom-1/3 bg-black text-white  absolute"
+          isOpen={converting}
+          overlayClassName="fixed bg-green-300 bg-opacity-50 top-0 left-0 right-0 bottom-0"
+        >
+          <div className="flex w-full h-full items-center justify-center flex-col">
+            <div>{progressBarText}</div>
+            <div className="relative mt-3 w-1/2 pt-1">
+              <ProgressBar width={progressBarWidth} />
+            </div>
+          </div>
+        </Modal>
+      </>
     );
   } else
     return (
@@ -133,40 +123,3 @@ export default function Playlists(): JSX.Element {
       </div>
     );
 }
-
-const playlist = {
-  collaborative: false,
-  description: "",
-  external_urls: {
-    spotify: "https://open.spotify.com/playlist/32037vlVm5bjcLBU00gkx8",
-  },
-  href: "https://api.spotify.com/v1/playlists/32037vlVm5bjcLBU00gkx8",
-  id: "32037vlVm5bjcLBU00gkx8",
-  images: [
-    {
-      height: 640,
-      url: "https://i.scdn.co/image/ab67616d0000b27310e6745bb2f179dd3616b85f",
-      width: 640,
-    },
-  ],
-  name: "classics only",
-  owner: {
-    display_name: "Aryan Chopra",
-    external_urls: {
-      spotify: "https://open.spotify.com/user/31wncfgmnvnuerqrnnvx2v3fyp3m",
-    },
-    href: "https://api.spotify.com/v1/users/31wncfgmnvnuerqrnnvx2v3fyp3m",
-    id: "31wncfgmnvnuerqrnnvx2v3fyp3m",
-    type: "user",
-    uri: "spotify:user:31wncfgmnvnuerqrnnvx2v3fyp3m",
-  },
-  primary_color: null,
-  public: false,
-  snapshot_id: "MyxmMTFjNmM4M2RjMGEzMTk5MDMzNzNiOTlhZTg3MmI5MWY5YWNiODU4",
-  tracks: {
-    href: "https://api.spotify.com/v1/playlists/32037vlVm5bjcLBU00gkx8/tracks",
-    total: 1,
-  },
-  type: "playlist",
-  uri: "spotify:playlist:32037vlVm5bjcLBU00gkx8",
-};
