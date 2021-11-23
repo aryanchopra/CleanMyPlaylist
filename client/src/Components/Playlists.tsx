@@ -1,11 +1,13 @@
-import axios, { AxiosResponse } from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useHistory } from "react-router";
 import PlaylistCard from "./PlaylistCard";
 import SpotifyService from "../services/Spotify";
+import Profile from "./Profile";
 import Modal from "react-modal";
 import ProgressBar from "./ProgressBar";
-
+import SearchBar from "./SearchBar";
+import Loader from "./Loader";
+import { useDebouncedValue } from "../Hooks/useDebouncedValue";
 Modal.setAppElement("#root");
 
 type Tokens = {
@@ -33,14 +35,26 @@ export default function Playlists(): JSX.Element {
   const [playlists, setPlaylists] = useState<
     SpotifyApi.PlaylistObjectSimplified[] | null
   >([]);
+
+  const [playliststoshow, setPLaylistsToShow] = useState<
+    SpotifyApi.PlaylistObjectSimplified[] | null
+  >(playlists);
+
   const [profile, setProfile] = useState<null | SpotifyApi.UserProfileResponse>(
     null
   );
   const [loading, setLoading] = useState<boolean>(true);
 
   const [converting, setConverting] = useState<boolean>(false);
+
   const [progressBarWidth, setProgressBarWidth] = useState<number>(0);
+
   const [progressBarText, setProgressBarText] = useState<string>("");
+
+  const [searchValue, setSearchValue] = useState<string>("");
+
+  const debouncedSearchValue = useDebouncedValue(searchValue, 500);
+
   const history = useHistory();
 
   useEffect(() => {
@@ -50,7 +64,6 @@ export default function Playlists(): JSX.Element {
     };
     const getPlaylists = async () => {
       const playlists = await SpotifyService.getPlaylists();
-      console.log(playlists);
       setPlaylists(playlists);
     };
     const tokens = getTokens();
@@ -59,10 +72,20 @@ export default function Playlists(): JSX.Element {
     SpotifyService.setTokens(tokens);
     getProfile();
     getPlaylists();
-    setLoading(false);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
   }, []);
 
-  var delete_cookie = function (name: string) {
+  useEffect(() => {
+    setPLaylistsToShow(playlists);
+  }, [playlists]);
+
+  useEffect(() => {
+    searchHandler(debouncedSearchValue);
+  }, [debouncedSearchValue]);
+
+  let delete_cookie = function (name: string) {
     document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:01 GMT;";
   };
   const logoutHandler = (): void => {
@@ -70,19 +93,34 @@ export default function Playlists(): JSX.Element {
     history.push("/");
   };
 
-  if (!loading && profile && playlists) {
+  // const debounce = (fn: Function, delay: number) => {
+  //   let timer: number | undefined;
+  //   return function (this: any, args: any) {
+  //     let context = this;
+  //     if (timer) clearTimeout(timer);
+  //     setTimeout(() => {
+  //       fn.apply(context, arguments);
+  //     }, delay);
+  //   };
+  // };
+
+  const searchHandler = (input: string) => {
+    console.log("searching");
+    const searchresults = playlists?.filter((playlist) =>
+      playlist.name.includes(input)
+    );
+    if (searchresults) setPLaylistsToShow(searchresults);
+  };
+
+  if (!loading && profile && playliststoshow && playlists) {
     return (
       <>
         <div className="h-full overflow-scroll overflow-x-hidden">
-          <div className="flex justify-center text-white mt-1">
-            Hi {profile.display_name}!{" "}
-            <button className="p-4 bg-green-400" onClick={logoutHandler}>
-              Logout
-            </button>
-          </div>
+          <Profile profile={profile} logoutHandler={logoutHandler} />
+          <SearchBar setSearchValue={setSearchValue} />
           <div className="flex  justify-center mt-6 ">
-            <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
-              {playlists.map((playlist) => (
+            <div className="grid  grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 grid-rows-2  grid-flow-row w-7/12 gap-3">
+              {playliststoshow.map((playlist) => (
                 <PlaylistCard
                   playlists={playlists}
                   setPlaylists={setPlaylists}
@@ -103,12 +141,12 @@ export default function Playlists(): JSX.Element {
           </div>
         </div>
         <Modal
-          className="top-1/3 right-1/3 left-1/3 bottom-1/3 bg-black text-white  absolute"
+          className="top-1/3 right-1/3 left-1/3 bottom-1/3 bg-black rounded-md text-white  absolute"
           isOpen={converting}
-          overlayClassName="fixed bg-green-300 bg-opacity-50 top-0 left-0 right-0 bottom-0"
+          overlayClassName="fixed bg-green-300 bg-opacity-50 top-0 left-0 right-0 bottom-0 "
         >
           <div className="flex w-full h-full items-center justify-center flex-col">
-            <div>{progressBarText}</div>
+            <div className="text-center">{progressBarText}</div>
             <div className="relative mt-3 w-1/2 pt-1">
               <ProgressBar width={progressBarWidth} />
             </div>
@@ -119,7 +157,7 @@ export default function Playlists(): JSX.Element {
   } else
     return (
       <div className="text-4xl text-white flex justify-center items-center h-full">
-        Loading...
+        <Loader />
       </div>
     );
 }

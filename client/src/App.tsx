@@ -13,7 +13,7 @@ export default function App(): JSX.Element {
     console.log("Location changed");
   }, [location]);
   return (
-    <div className="w-full h-screen  p-5 bg-black ">
+    <div className="w-full h-screen font-sans p-2 md:p-5 bg-black ">
       <Switch>
         <Route path="/playlists">
           <Playlists />

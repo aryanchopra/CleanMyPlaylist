@@ -95,6 +95,23 @@ const getPlaylists = async () => {
   return null;
 };
 
+const getPlaylist = async (id: string) => {
+  try {
+    const response: AxiosResponse = await axios.get(
+      `https://api.spotify.com/v1/playlists/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${tokens?.accessToken}`,
+        },
+      }
+    );
+    const playlist: SpotifyApi.PlaylistObjectSimplified = response.data;
+    if (playlist) {
+      return playlist;
+    }
+  } catch (err) {}
+};
+
 const getTracks = async (tracksurl: string) => {
   let totalsongs: SpotifyApi.PlaylistTrackObject[] = [];
   try {
@@ -182,6 +199,7 @@ export default {
   setTokens,
   getProfile,
   getPlaylists,
+  getPlaylist,
   getTracks,
   findCleanSongs,
 };

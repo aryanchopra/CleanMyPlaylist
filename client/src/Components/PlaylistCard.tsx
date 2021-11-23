@@ -83,7 +83,9 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
     const songs = await SpotifyService.getTracks(playlisttracksurl);
     setProgressBarWidth(20);
     const trackidsandnames = getNonLocalSongsFromPlaylist(songs);
-    setProgressBarText("Finding clean versions...");
+    setProgressBarText(
+      "Finding clean versions... (This may take a while depending on the number of songs)"
+    );
     const cleanSongs: cleanSong[] = await SpotifyService.findCleanSongs(
       trackidsandnames
     );
@@ -105,7 +107,6 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
       }
     );
     const newplaylist: SpotifyApi.CreatePlaylistResponse = response.data;
-    console.log(newplaylist);
     const newplaylistid = newplaylist.id;
     setProgressBarWidth(70);
     setProgressBarText("Adding clean songs to playlist...");
@@ -132,14 +133,16 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
         }
       );
     }
+    const newplaylistobj = await SpotifyService.getPlaylist(newplaylistid);
+    if (newplaylistobj) setPlaylists([newplaylistobj, ...playlists]);
     setProgressBarWidth(100);
-    await delay(5);
-    setPlaylists([newplaylist, ...playlists]);
+    await delay(2);
+
     setConverting(false);
   };
   return (
     <>
-      <div className="w-full h-72 rounded-md hover:border-green-200 border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden">
+      <div className="relative w-full h-64 rounded-md hover:border-green-200 border-green-600 bg-black text-white border-2 p-4 flex flex-col items-center overflow-hidden shadow-custom">
         <a target="_blank" href={url}>
           <img src={img} style={{ height: "127px", width: "127px" }} />
         </a>
@@ -152,7 +155,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
           {tracks.total} {tracks.total > 1 ? "tracks" : "track"}
         </p>
         <button
-          className="p-2 rounded-l-3xl rounded-r-3xl bg-green-600"
+          className="p-2 rounded-lg ring-2 ring-green-300 bg-green-600 hover:bg-green-300 bottom-3 absolute"
           onClick={() => convertPlaylist(tracks.href, name, userid)}
         >
           {" "}
