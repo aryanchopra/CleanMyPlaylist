@@ -13,7 +13,14 @@ module.exports = {
     boxShadow: {
       custom: " 22px 64px 248px -18px rgba(29,215,97,0.54)",
     },
-    extend: {},
+    extend: {
+      colors: {
+        "spotify-green": "#1DB954",
+      },
+    },
+    fontFamily: {
+      opensans: ["Open Sans"],
+    },
   },
   variants: {
     extend: {},
