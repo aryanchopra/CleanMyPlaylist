@@ -152,10 +152,10 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
           </a>
         </p>
         <p className="self-start">
-          {tracks.total} {tracks.total > 1 ? "tracks" : "track"}
+          {tracks.total > 1 ? `${tracks.total} tracks` : "No tracks"}
         </p>
         <button
-          className="p-2 rounded-lg ring-2 ring-green-300 bg-green-600 hover:bg-green-300 bottom-3 absolute"
+          className="p-2 rounded-full px-4  bg-spotify-green hover:bg-green-500 bottom-3 absolute"
           onClick={() => convertPlaylist(tracks.href, name, userid)}
         >
           {" "}

@@ -16,10 +16,10 @@ const Profile: React.FC<ProfileProps> = ({
           <img className="rounded-full" src={profile.images[0].url}></img>
         </div>
       )}
-      Logged in as &nbsp;
-      <a href={profile.external_urls.spotify}>{` ${profile.display_name}`}</a>
+      Logged in as&nbsp;
+      <a href={profile.external_urls.spotify}>{`${profile.display_name}`}</a>
       <button
-        className="py-2 px-4 ml-3 rounded-md ring-2 ring-green-300 bg-green-600 hover:bg-green-300 "
+        className="py-2 px-4 ml-3 rounded-full bg-spotify-green  hover:bg-green-500 "
         onClick={logoutHandler}
       >
         Logout

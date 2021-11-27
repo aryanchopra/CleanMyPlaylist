@@ -115,7 +115,7 @@ export default function Playlists(): JSX.Element {
   if (!loading && profile && playliststoshow && playlists) {
     return (
       <>
-        <div className="h-full overflow-scroll overflow-x-hidden">
+        <div className="h-full overflow-scroll overflow-x-hidden p-4">
           <Profile profile={profile} logoutHandler={logoutHandler} />
           <SearchBar setSearchValue={setSearchValue} />
           <div className="flex  justify-center mt-6 ">
