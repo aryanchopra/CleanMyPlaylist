@@ -7,6 +7,11 @@ const SpotifyStrategy = require("./passport");
 const morgan = require("morgan");
 const { resolve } = require("path");
 
+const base_url =
+  process.env.NODE_ENV === "production"
+    ? "http://https://cleanmyplaylist.herokuapp.com/"
+    : "http://localhost:3000/";
+
 morgan.token("data", (req, res) => {
   if (req.method == "POST") {
     return [req.body];
@@ -38,9 +43,9 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser()).use(morganmiddleware);
 app.use(passport.initialize());
-app.use(express.static(__dirname + "/../client/public"));
+app.use(express.static(__dirname + "/client/public"));
 
-const resolvedPath = path.resolve(__dirname + "/../client/public/index.html");
+const resolvedPath = path.resolve(__dirname + "/client/public/index.html");
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -70,12 +75,12 @@ app.get(
 app.get(
   "/auth/spotify/callback",
   passport.authenticate("spotify", {
-    failureRedirect: "http://localhost:3000",
+    failureRedirect: base_url,
   }),
   function (req, res) {
     const authInfo = JSON.stringify(res.req.authInfo);
     res.cookie("authInfo", authInfo);
-    res.redirect("http://localhost:3000/playlists");
+    res.redirect(`${base_url}/playlists`);
   }
 );
 
@@ -109,6 +114,7 @@ app.get("/*", function (req, res) {
   console.log("here");
   res.sendFile(resolvedPath);
 });
+console.log(process.env.NODE_ENV);
 const port = process.env.PORT || 8888;
 console.log("Listening on", port);
 app.listen(port);
