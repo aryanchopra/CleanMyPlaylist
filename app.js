@@ -10,7 +10,7 @@ const { resolve } = require("path");
 const base_url =
   process.env.NODE_ENV === "production"
     ? "http://https://cleanmyplaylist.herokuapp.com/"
-    : "http://localhost:3000/";
+    : "http://localhost:8888/";
 
 morgan.token("data", (req, res) => {
   if (req.method == "POST") {
@@ -80,7 +80,7 @@ app.get(
   function (req, res) {
     const authInfo = JSON.stringify(res.req.authInfo);
     res.cookie("authInfo", authInfo);
-    res.redirect(`${base_url}/playlists`);
+    res.redirect(`${base_url}playlists`);
   }
 );
 
