@@ -35,7 +35,8 @@
     // ] /* Specify multiple folders that act like `./node_modules/@types`. */,
     "types": [
       "spotify-api",
-      "axios"
+      "axios",
+      "node"
     ] /* Specify type package names to be included without being referenced in a source file. */,
     // "allowUmdGlobalAccess": true,                     /* Allow accessing UMD globals from modules. */
     // "resolveJsonModule": true,                        /* Enable importing .json files */

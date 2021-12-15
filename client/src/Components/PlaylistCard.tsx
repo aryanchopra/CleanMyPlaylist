@@ -146,11 +146,11 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
         <a target="_blank" href={url}>
           <img src={img} style={{ height: "127px", width: "127px" }} />
         </a>
-        <p>
+        <span className="whitespace-nowrap">
           <a target="_blank" href={url}>
-            {name.substr(0, 14) + (name.length > 17 ? "..." : "")}
+            {name.substr(0, 15) + (name.length > 17 ? "..." : "")}
           </a>
-        </p>
+        </span>
         <p className="self-start">
           {tracks.total > 1 ? `${tracks.total} tracks` : "No tracks"}
         </p>

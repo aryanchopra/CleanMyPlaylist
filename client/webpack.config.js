@@ -1,3 +1,4 @@
+const webpack = require("webpack");
 const path = require("path");
 const glob = require("glob");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
@@ -61,6 +62,11 @@ module.exports = {
     // new BundleAnalyzerPlugin(),
     new MiniCssExtractPlugin({
       filename: "[name].css",
+    }),
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify(
+        process.env.NODE_ENV || "development"
+      ),
     }),
     // new PurgeCSSPlugin({
     //   paths: glob.sync(`${PATHS.src}/**/*`, { nodir: true }),

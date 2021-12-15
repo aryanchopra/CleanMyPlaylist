@@ -1,8 +1,15 @@
 import React from "react";
 
+const mode = process.env.NODE_ENV;
+
+const BASE_URL =
+  mode === "development"
+    ? "http://localhost:8888"
+    : "https://cleanmyplaylist.herokuapp.com";
+
 export default function Login(): JSX.Element {
   const loginHandler = async (): Promise<void> => {
-    window.location.href = "http://localhost:8888/api/login";
+    window.location.href = `${BASE_URL}/api/login`;
   };
   return (
     <div
