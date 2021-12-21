@@ -60,7 +60,7 @@ app.get(
   passport.authenticate("spotify", {
     display: "popup",
     scope: [
-      "user-read-email",
+      // "user-read-email",
       "user-read-private",
       "playlist-modify-private",
       "playlist-read-private",
@@ -116,5 +116,6 @@ app.get("/*", function (req, res) {
 });
 console.log(process.env.NODE_ENV);
 const port = process.env.PORT || 8888;
+console.log(process.env.NODE_ENV);
 console.log("Listening on", port);
 app.listen(port);

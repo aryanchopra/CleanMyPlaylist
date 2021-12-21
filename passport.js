@@ -6,9 +6,9 @@ const client_secret = process.env.CLIENT_SECRET;
 const mode = process.env.NODE_ENV;
 
 const BASE_URL =
-  mode === "development"
-    ? "http://localhost:8888"
-    : "https://cleanmyplaylist.herokuapp.com";
+  mode === "production"
+    ? "https://cleanmyplaylist.herokuapp.com"
+    : "http://localhost:8888";
 passport.use(
   new SpotifyStrategy(
     {
