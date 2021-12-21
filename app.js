@@ -60,7 +60,6 @@ app.get(
   passport.authenticate("spotify", {
     display: "popup",
     scope: [
-      // "user-read-email",
       "user-read-private",
       "playlist-modify-private",
       "playlist-read-private",
