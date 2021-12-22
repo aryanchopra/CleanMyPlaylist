@@ -13,7 +13,13 @@ const Profile: React.FC<ProfileProps> = ({
     <div className="flex justify-center items-center  text-white mt-1">
       {profile.images && (
         <div className=" w-16 h-16 mr-2">
-          <img className="rounded-full" src={profile.images[0].url}></img>
+          <img
+            className="rounded-full"
+            src={
+              profile.images?.[0].url ||
+              "https://www.personality-insights.com/wp-content/uploads/2017/12/default-profile-pic-150x150.jpg"
+            }
+          ></img>
         </div>
       )}
       Logged in as&nbsp;
