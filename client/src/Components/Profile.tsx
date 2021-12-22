@@ -16,7 +16,7 @@ const Profile: React.FC<ProfileProps> = ({
           <img
             className="rounded-full"
             src={
-              profile.images?.[0].url ||
+              profile.images?.[0]?.url ||
               "https://www.personality-insights.com/wp-content/uploads/2017/12/default-profile-pic-150x150.jpg"
             }
           ></img>
