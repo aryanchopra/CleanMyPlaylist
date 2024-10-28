@@ -8,7 +8,7 @@ const mode = process.env.NODE_ENV;
 const BASE_URL =
   mode === "production"
     ? "https://cleanmyplaylist.onrender.com"
-    : "http://localhost:8888";
+    : "https://cleanmyplaylist.onrender.com";
 passport.use(
   new SpotifyStrategy(
     {

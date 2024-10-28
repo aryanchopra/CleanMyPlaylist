@@ -10,7 +10,7 @@ const { resolve } = require("path");
 const base_url =
   process.env.NODE_ENV === "production"
     ? "https://cleanmyplaylist.onrender.com/"
-    : "http://localhost:3000/";
+    : "https://cleanmyplaylist.onrender.com/";
 
 morgan.token("data", (req, res) => {
   if (req.method == "POST") {
