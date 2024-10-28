@@ -20,7 +20,7 @@ A web app to convert explicit songs in a Spotify playlist to their clean version
 
 ## Demo
 
-[CleanMyPlaylist](https://cleanmyplaylist.herokuapp.com/)
+[CleanMyPlaylist](https://cleanmyplaylist.onrender.com/)
 
 ![](demo.gif)
 

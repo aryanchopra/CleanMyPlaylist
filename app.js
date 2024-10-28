@@ -9,8 +9,8 @@ const { resolve } = require("path");
 
 const base_url =
   process.env.NODE_ENV === "production"
-    ? "https://cleanmyplaylist.herokuapp.com/"
-    : "http://localhost:8888/";
+    ? "https://cleanmyplaylist.onrender.com/"
+    : "http://localhost:3000/";
 
 morgan.token("data", (req, res) => {
   if (req.method == "POST") {
